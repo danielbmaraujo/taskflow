@@ -1,0 +1,45 @@
+name: 🧪 Testes Backend (API)
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  backend-tests:
+    name: Testes da API com Cypress
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: 📦 Instalar dependências raiz (Cypress)
+        run: npm install
+
+      - name: 📦 Instalar dependências do backend
+        run: cd backend && npm install
+
+      - name: 🚀 Iniciar servidor backend
+        run: |
+          cd backend && node server.js &
+          echo "Aguardando backend na porta 3001..."
+          npx wait-on http://localhost:3001/api/health --timeout 30000
+
+      - name: 🧪 Executar testes do backend
+        run: npx cypress run --spec "cypress/e2e/backend.cy.js"
+
+      - name: 📊 Upload de screenshots em caso de falha
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-backend-screenshots
+          path: cypress/screenshots
+          retention-days: 7
